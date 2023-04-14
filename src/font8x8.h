@@ -4,7 +4,7 @@
 // 8x8 Font ASCII 32 - 127 Implemented
 // Users can modify this to support more characters (glyphs)
 
-const uint8_t c64_font[] PROGMEM = {
+const uint8_t font[] PROGMEM = {
   0x08,                                     // width
   0x08,                                     // height
 

@@ -1,8 +1,10 @@
 #include <Arduino.h>
 #include "font8x8.h"
 #include <ESP32Encoder.h>
+#include <CheapStepper.h>
 
 ESP32Encoder encoder;
+CheapStepper stepper(16, 17, 21, 22); 
 
 // Font was generated here: https://rop.nl/truetype2gfx/
 
@@ -98,13 +100,42 @@ static void loop_encoder()
 	Serial.println("Encoder count = " + String((int32_t)encoder.getCount()));
 }
 
+static void setup_stepper()
+{
+  // let's set a custom speed of 20rpm (the default is ~16.25rpm)
+  
+  stepper.setRpm(20); 
+  /* Note: CheapStepper library assumes you are powering your 28BYJ-48 stepper
+   * using an external 5V power supply (>100mA) for RPM calculations
+   * -- don't try to power the stepper directly from the Arduino
+   * 
+   * accepted RPM range: 6RPM (may overheat) - 24RPM (may skip)
+   * ideal range: 10RPM (safe, high torque) - 22RPM (fast, low torque)
+   */
+
+}
+
 void setup()
 {
   Serial.begin(9600);
   while (!Serial);  // wait for serial port to connect. Needed for native USB
 
   setup_text();
-  setup_encoder();  
+  setup_encoder();
+  setup_stepper();
+}
+
+void spray(uint8_t pixel, bool on)
+{
+  Serial.print(on ? '*' : ' ');
+
+  if (pixel != 1)
+    return;
+  
+  if (on)
+    stepper.moveToDegree(true, 180);
+  else
+    stepper.moveToDegree(false, 0);
 }
 
 void loop()
@@ -142,10 +173,10 @@ void loop()
   uint8_t pixels = pgm_read_byte_near(glyph + letter_pixel);
 
   for (int i = 7; i >= 0; i--) {
-      Serial.print((pixels & 1<<i) ? '*' : ' ');
+    spray(i, pixels & 1<<i);
   }
 
-  Serial.printf("  steps: %d | text_step: %d letter: %c pixel: %d.%#x - pixels: %#x\n", steps, text_step, letter, text_letter, letter_pixel, *glyph, pixels);
+  Serial.printf("  steps: %d | text_step: %d letter: %c pixel: %d.%d - pixels: %#x\n", steps, text_step, letter, text_letter, letter_pixel, pixels);
 
   prev_text_letter = text_letter;
   prev_letter_pixel = letter_pixel;

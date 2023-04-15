@@ -8,10 +8,10 @@ CheapStepper stepper(16, 17, 21, 22);
 
 // Font was generated here: https://rop.nl/truetype2gfx/
 
-#define STEPS_PER_CM 8 // 40 // 1 full cycle is 1cm
+#define STEPS_PER_CM 2 // 40 // 1 full cycle is 1cm
 #define PIXEL_CM 1       // Every pixel is 1cm len
 #define LETTER_PIXELS 8
-#define PIXEL_PAINT_MS 1000
+#define PIXEL_PAINT_MS 5000
 
 static String text = "Hello World";
 static int total_text_steps;
@@ -87,10 +87,10 @@ static void setup_encoder()
 	encoder.attachHalfQuad(19, 18);
 		
 	// set starting count value after attaching
-	// encoder.setCount(37);
+	encoder.setCount(-1);
 
 	// clear the encoder's raw count and set the tracked count to zero
-	encoder.clearCount();
+	//encoder.clearCount();
 	Serial.println("Encoder Start = " + String((int32_t)encoder.getCount()));
 }
 
@@ -117,7 +117,7 @@ static void setup_stepper()
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial);  // wait for serial port to connect. Needed for native USB
 
   setup_text();
@@ -141,16 +141,11 @@ void spray(uint8_t pixel, bool on)
 void loop()
 {
   static unsigned long stop_painting_ts;
-  static unsigned long next;
-  static int prev_text_letter = -1;
-  static int prev_letter_pixel = -1;
+  static int prev_steps = -1;
   
   int steps = encoder.getCount();
-  int text_step = steps % total_text_steps;
-  int text_letter = (text_step / (PIXEL_CM * STEPS_PER_CM)) / LETTER_PIXELS;
-  int letter_pixel = (text_step / (PIXEL_CM * STEPS_PER_CM)) % LETTER_PIXELS;
 
-  if (prev_text_letter == text_letter && prev_letter_pixel == letter_pixel) {
+  if (steps == prev_steps) {
     if (stop_painting_ts && millis() > stop_painting_ts) {
       Serial.println("Stop painting");
       stop_painting_ts = 0;
@@ -158,11 +153,11 @@ void loop()
 
     return;
   }
+  prev_steps = steps;
 
-  //if (next && millis() < next)
-  //  return;
-
-  //next = millis() + 1000;
+  int text_step = steps % total_text_steps;
+  int text_letter = (text_step / (PIXEL_CM * STEPS_PER_CM)) / LETTER_PIXELS;
+  int letter_pixel = (text_step / (PIXEL_CM * STEPS_PER_CM)) % LETTER_PIXELS;
 
   char letter = text.charAt(text_letter);
 
@@ -178,7 +173,5 @@ void loop()
 
   Serial.printf("  steps: %d | text_step: %d letter: %c pixel: %d.%d - pixels: %#x\n", steps, text_step, letter, text_letter, letter_pixel, pixels);
 
-  prev_text_letter = text_letter;
-  prev_letter_pixel = letter_pixel;
   stop_painting_ts = millis() + PIXEL_PAINT_MS;
 }

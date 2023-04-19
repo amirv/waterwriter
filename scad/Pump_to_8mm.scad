@@ -1,7 +1,6 @@
 use <threadlib/threadlib.scad>
-
-include <openscad-model-library/lib/material.scad>;
-include <openscad-model-library/lib/water/tube_connector.scad>;
+use <openscad-model-library/lib/material.scad>;
+use <openscad-model-library/lib/water/tube_connector.scad>;
 
 // The parameters of the hose connector
 Size=8;
@@ -16,16 +15,18 @@ turns = 8;
 Douter = 30;
 
 // middle part
-Spacer = 2;
+Spacer = 3;
 
+specs = thread_specs(str(designator, "-int"));
+Dsupport = specs[2];
+            
 plastic() {
     union() {
         rotate([180, 0, 0]) {
             difference() {
                 cylinder(h = Spacer, r = 15, $fn = 6);
-                cylinder(h = Spacer + 1, r = Size/2 - Wall_Thickness );
-                translate([0,0,-9]) sphere(r = 10);
-
+                translate([0,0,-.5]) cylinder(h = Spacer - 1, d1 = Dsupport - 2, d2 = Size - 2*Wall_Thickness);
+                translate([0,0,-.5]) cylinder(h = Spacer + 1, d = Size - 2*Wall_Thickness );
             }
             translate([0, 0, Spacer])
                 tube_connector(Size, Wall_Thickness, Size_barb_count, Shoulder, Shoulder_height);
